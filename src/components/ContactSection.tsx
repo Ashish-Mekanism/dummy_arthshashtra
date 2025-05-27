@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useForm } from "react-hook-form";
-import emailjs from "@emailjs/browser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -45,39 +44,33 @@ const ContactSection = () => {
     }
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(
+    values: z.infer<typeof formSchema>,
+    event: React.FormEvent
+  ) {
+    event.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // await emailjs.send(
-      //   "service_kvu49ow", // Replace with your EmailJS service ID
-      //   "template_kxnqigw", // Replace with your EmailJS template ID
-      //   {
-      //     from_name: values.name,
-      //     from_email: values.email,
-      //     phone: values.phone,
-      //     message: values.message || "",
-      //     to_email: "ashish.dev@tech.mekanism.cc" // Replace with your email
-      //   },
-      //   "KQxqtEgO3yjqRKF5s" // Replace with your EmailJS public key
-      // );
       const formData = new FormData();
+      formData.append("form-name", "contact");
       formData.append("name", values.name);
       formData.append("email", values.email);
       formData.append("phone", values.phone);
       formData.append("message", values.message || "");
 
-      // Submit to Netlify forms
-      await fetch("/", {
+      const response = await fetch("/", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          name: values.name,
-          email: values.email,
-          phone: values.phone,
-          message: values.message || ""
-        }).toString()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        body: new URLSearchParams(formData as any).toString()
       });
+
+      if (!response.ok) {
+        throw new Error(
+          `Form submission failed with status: ${response.status}`
+        );
+      }
 
       toast({
         title: "Success!",
@@ -86,6 +79,7 @@ const ContactSection = () => {
       });
       form.reset();
     } catch (error) {
+      console.error("Form submission error:", error);
       toast({
         title: "Error",
         description: "Failed to send message. Please try again later.",
@@ -119,7 +113,6 @@ const ContactSection = () => {
           transition={{ duration: 0.5 }}
           className="max-w-5xl mx-auto"
         >
-          {/* Contact Header Section */}
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-playfair font-bold mb-6 text-arthashastra-gold">
               Contact <span className="text-white">Us</span>
@@ -132,7 +125,6 @@ const ContactSection = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
-            {/* Contact Information */}
             <div className="lg:col-span-2">
               <div className="space-y-8">
                 <h2 className="text-2xl font-playfair font-semibold text-arthashastra-gold mb-6">
@@ -163,7 +155,6 @@ const ContactSection = () => {
               </div>
             </div>
 
-            {/* Contact Form */}
             <div className="lg:col-span-3 bg-arthashastra-dark p-8 rounded-lg border border-arthashastra-gold/20 shadow-xl">
               <h2 className="text-2xl font-playfair font-semibold text-arthashastra-gold mb-6">
                 Send Us a Message
@@ -175,15 +166,15 @@ const ContactSection = () => {
                   method="POST"
                   data-netlify="true"
                   data-netlify-honeypot="bot-field"
-                  onSubmit={form.handleSubmit(onSubmit)}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    form.handleSubmit((data) => onSubmit(data, e))();
+                  }}
                   className="space-y-6"
                 >
                   <input type="hidden" name="form-name" value="contact" />
-                  <p className="hidden">
-                    <label>
-                      Don’t fill this out: <input name="bot-field" />
-                    </label>
-                  </p>
+                  <input type="hidden" name="bot-field" />
+
                   <FormField
                     control={form.control}
                     name="name"
@@ -219,6 +210,7 @@ const ContactSection = () => {
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-arthashastra-gold/70" />
                             <Input
                               name="email"
+                              type="email"
                               placeholder="your@email.com"
                               className="pl-10 bg-arthashastra-darker border-arthashastra-gold/20 focus-visible:ring-arthashastra-gold/30 text-black"
                               {...field}
@@ -243,6 +235,7 @@ const ContactSection = () => {
                             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-arthashastra-gold/70" />
                             <Input
                               name="phone"
+                              type="tel"
                               placeholder="Enter your phone number"
                               className="pl-10 bg-arthashastra-darker border-arthashastra-gold/20 focus-visible:ring-arthashastra-gold/30 text-black"
                               {...field}
