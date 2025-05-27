@@ -61,6 +61,23 @@ const ContactSection = () => {
       //   },
       //   "KQxqtEgO3yjqRKF5s" // Replace with your EmailJS public key
       // );
+      const formData = new FormData();
+      formData.append("name", values.name);
+      formData.append("email", values.email);
+      formData.append("phone", values.phone);
+      formData.append("message", values.message || "");
+
+      // Submit to Netlify forms
+      await fetch("/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          name: values.name,
+          email: values.email,
+          phone: values.phone,
+          message: values.message || ""
+        }).toString()
+      });
 
       toast({
         title: "Success!",
